@@ -239,51 +239,74 @@ for i = 1 : n_Hx1 + 1
 
     end
 
-    i = i+1;
+    Q_total_Hx1(i+1) = q_total_Hx1(i) + Q_total_Hx1(i);
 
-    Q_total_Hx1(i) = q_total_Hx1(i-1) + Q_total_Hx1(i-1);
+    fricpf_Hx1(i+1) = n_fuel_Hx1*pi/8*f_fuel_Hx1(i)*rho_fuel_Hx1(i)*u_fuel_Hx1(i)^2*D_fuel_h_Hx1;
+    qpp_Hx1(i+1) = (q_total_Hx1(i)/dx)/(W_ch_Hx1*n_fuel_Hx1); % heat addition per unit length
+    qp_Hx1(i+1) = u_fuel_Hx1(i)*fricpf_Hx1(i+1)+Apwc_Hx1*qpp_Hx1(i+1);
+    drfdp_Hx1(i+1) = ( fn_rho_find(T_fuel_Hx1(i), p_fuel_Hx1(i)+100, rho, p) - fn_rho_find(T_fuel_Hx1(i), p_fuel_Hx1(i), rho, p) )/100000;
+    drfdT_Hx1(i+1) = ( fn_rho_find(T_fuel_Hx1(i)+20, p_fuel_Hx1(i), rho, p) - fn_rho_find(T_fuel_Hx1(i), p_fuel_Hx1(i), rho, p) )/20;
 
-    fricpf_Hx1(i) = n_fuel_Hx1*pi/8*f_fuel_Hx1(i-1)*rho_fuel_Hx1(i-1)*u_fuel_Hx1(i-1)^2*D_fuel_h_Hx1;
-    qpp_Hx1(i) = (q_total_Hx1(i-1)/dx)/(W_ch_Hx1*n_fuel_Hx1); % heat addition per unit length
-    qp_Hx1(i) = u_fuel_Hx1(i-1)*fricpf_Hx1(i)+Apwc_Hx1*qpp_Hx1(i);
-    drfdp_Hx1(i) = ( fn_rho_find(T_fuel_Hx1(i-1), p_fuel_Hx1(i-1)+100, rho, p) - fn_rho_find(T_fuel_Hx1(i-1), p_fuel_Hx1(i-1), rho, p) )/100000;
-    drfdT_Hx1(i) = ( fn_rho_find(T_fuel_Hx1(i-1)+20, p_fuel_Hx1(i-1), rho, p) - fn_rho_find(T_fuel_Hx1(i-1), p_fuel_Hx1(i-1), rho, p) )/20;
+    dTdxf_Hx1(i+1) = -1*beta_Hx1(i)*T_fuel_Hx1(i)*fricpf_Hx1(i+1) / (rho_fuel_Hx1(i)*Cp_fuel_Hx1(i)*(1+u_fuel_Hx1(i)^2*drfdp_Hx1(i+1))*Area_fuel_Hx1) + qp_Hx1(i+1)/m_dot_fuel/Cp_fuel_Hx1(i);
+    dTdxf_Hx1(i+1) = dTdxf_Hx1(i+1)/(1+beta_Hx1(i)*T_fuel_Hx1(i)*drfdT_Hx1(i+1)*u_fuel_Hx1(i)^2/rho_fuel_Hx1(i)/Cp_fuel_Hx1(i)/(1+u_fuel_Hx1(i)^2*drfdp_Hx1(i+1)));
+    dpdxf_Hx1(i+1) = (-1*u_fuel_Hx1(i)^2*drfdT_Hx1(i+1)*dTdxf_Hx1(i+1) - fricpf_Hx1(i+1)/Area_fuel_Hx1)/(1+u_fuel_Hx1(i)^2*drfdp_Hx1(i+1));
+    drhodxf_Hx1(i+1) = drfdp_Hx1(i+1)*dpdxf_Hx1(i+1) +drfdT_Hx1(i+1)*dTdxf_Hx1(i+1);
+    % dudxf_Hx1(i+1) = -1*u_fuel_Hx1(i)/rho_fuel_Hx1(i)*drhodxf_Hx1(i+1);
 
-    dTdxf_Hx1(i) = -1*beta_Hx1(i-1)*T_fuel_Hx1(i-1)*fricpf_Hx1(i) / (rho_fuel_Hx1(i-1)*Cp_fuel_Hx1(i-1)*(1+u_fuel_Hx1(i-1)^2*drfdp_Hx1(i))*Area_fuel_Hx1) + qp_Hx1(i)/m_dot_fuel/Cp_fuel_Hx1(i-1);
-    dTdxf_Hx1(i) = dTdxf_Hx1(i)/(1+beta_Hx1(i-1)*T_fuel_Hx1(i-1)*drfdT_Hx1(i)*u_fuel_Hx1(i-1)^2/rho_fuel_Hx1(i-1)/Cp_fuel_Hx1(i-1)/(1+u_fuel_Hx1(i-1)^2*drfdp_Hx1(i)));
-    dpdxf_Hx1(i) = (-1*u_fuel_Hx1(i-1)^2*drfdT_Hx1(i)*dTdxf_Hx1(i) - fricpf_Hx1(i)/Area_fuel_Hx1)/(1+u_fuel_Hx1(i-1)^2*drfdp_Hx1(i));
-    drhodxf_Hx1(i) = drfdp_Hx1(i)*dpdxf_Hx1(i) +drfdT_Hx1(i)*dTdxf_Hx1(i);
-    dudxf_Hx1(i) = -1*u_fuel_Hx1(i-1)/rho_fuel_Hx1(i-1)*drhodxf_Hx1(i);
+    dh_Hx1(i+1) = (beta_Hx1(i)*T_fuel_Hx1(i)/rho_fuel_Hx1(i)*dpdxf_Hx1(i+1)+dTdxf_Hx1(i+1)*Cp_fuel_Hx1(i))*dx;
+    h_Hx1(i+1) = dh_Hx1(i+1) + h_Hx1(i);
+    dT_Hx1(i+1) = 0.5*dh_Hx1(i+1) / Cp_fuel_Hx1(i) / max(h_Hx1(i+1)/h_Hx1(i), h_Hx1(i)/h_Hx1(i+1));
+    T_fuel_iter_Hx1(i+1) = T_fuel_Hx1(i) + dT_Hx1(i+1);
+    
+    Cp_fuel_iter_Hx1(i+1) = fn_Cp_find(T_fuel_iter_Hx1(i+1), p_fuel_Hx1(i), cp, p);
+    h_iter_Hx1(i+1) = h_Hx1(i) + (Cp_fuel_Hx1(i) + Cp_fuel_iter_Hx1(i+1))/ 2 * dT_Hx1(i+1);
+    tol_Hx1(i+1) = abs((h_Hx1(i+1) - h_iter_Hx1(i+1)) / h_Hx1(i+1));
 
-    dh_Hx1(i) = dTdxf_Hx1(i)*Cp_fuel_Hx1(i-1)*dx;
-    h_Hx1(i) = dh_Hx1(i) + h_Hx1(i-1);
-    dT_Hx1(i) = 0.5*dh_Hx1(i) / Cp_fuel_Hx1(i-1) / max(h_Hx1(i)/h_Hx1(i-1), h_Hx1(i-1)/h_Hx1(i));
-    T_fuel_iter_Hx1(i) = T_fuel_Hx1(i-1) + dT_Hx1(i);
-    Cp_fuel_iter_Hx1(i) = fn_Cp_find(T_fuel_iter_Hx1(i), p_fuel_Hx1(i-1), cp, p);
-    h_iter_Hx1(i) = h_Hx1(i-1) + (Cp_fuel_Hx1(i-1) + Cp_fuel_iter_Hx1(i))/ 2 * dT_Hx1(i);
-    tol_Hx1(i) = abs((h_Hx1(i) - h_iter_Hx1(i)) / h_Hx1(i));
-
+    % Iteration Code (Revised)
     Iter = 1;
-    tol_Hx1(Iter) = tol_Hx1(i);
-    dh_Hx1_1 = dh_Hx1(i);
+    tol_Hx_1 = tol_Hx1(i+1);
+    dh_Hx1_1 = dh_Hx1(i+1);
 
     if tol_Hx1(Iter) > 1e-8
-        dT_iter(Iter) = 0.5*dh_Hx1_1 / Cp_fuel_Hx1(i-1) / max(h_Hx1(i)/h_Hx1(i-1), h_Hx1(i-1)/h_Hx1(i));
-        T_fuel_iter_Hx1(Iter) = T_fuel_Hx1(i-1) + dT_Hx1(i);
-        Cp_fuel_iter_Hx1(Iter) = fn_Cp_find(T_fuel_iter_Hx1(i), p_fuel_Hx1(i-1), cp, p);
-        h_iter_Hx1(Iter) = h_Hx1(i-1) + (Cp_fuel_Hx1(i-1) + Cp_fuel_iter_Hx1(i))/ 2 * dT_Hx1(i);
-        tol_Hx1(Iter) = abs((h_Hx1(i) - h_iter_Hx1(i)) / h_Hx1(i));
+        dT_iter = 0.5*dh_Hx1_1 / Cp_fuel_Hx1(i) / max(h_Hx1(i+1)/h_Hx1(i), h_Hx1(i)/h_Hx1(i+1));
+        T_fuel_iter_Hx1(Iter) = T_fuel_Hx1(i) + dT_Hx1(i+1);
+        Cp_fuel_iter_Hx1(Iter) = fn_Cp_find(T_fuel_iter_Hx1(i+1), p_fuel_Hx1(i), cp, p);
+        h_iter_Hx1(Iter) = h_Hx1(i) + (Cp_fuel_Hx1(i) + Cp_fuel_iter_Hx1(i+1))/ 2 * dT_iter;
+        tol_Hx1(Iter) = abs((h_Hx1(i+1) - h_iter_Hx1(Iter)) / h_Hx1(i+1));
 
     else
-        T_fuel_Hx1(i) = T_fuel_iter_Hx1(Iter);
+        T_fuel_Hx1(i+1) = T_fuel_iter_Hx1(Iter);
 
         Iter = Iter + 1;
     end
 
-    T_fuel_Hx1(i) = T_fuel_iter_Hx1(Iter);
-    dp_fuel_Hx1(i) = (f_fuel_Hx1(i-1)*(dx/D_fuel_h_Hx1)*rho_fuel_Hx1(i-1)*((u_fuel_Hx1(i-1)^2)/2))/1000;
-    p_fuel_Hx1(i) = p_fuel_Hx1(i-1) - dp_fuel_Hx1(i);
-    sum_dp_fuel_Hx1(i) = sum_dp_fuel_Hx1(i-1) + dp_fuel_Hx1(i);
+    T_fuel_Hx1(i+1) = T_fuel_iter_Hx1(Iter);
+    % End of Iteration Code (Revised)
+
+    % % Iteration Code (Existed)
+    % Iter = 1;
+    % tol_Hx1(Iter) = tol_Hx1(i+1);
+    % dh_Hx1_1 = dh_Hx1(i+1);
+    % 
+    % if tol_Hx1(Iter) > 1e-8
+    %     dT_iter(Iter) = 0.5*dh_Hx1_1 / Cp_fuel_Hx1(i) / max(h_Hx1(i+1)/h_Hx1(i), h_Hx1(i)/h_Hx1(i+1));
+    %     T_fuel_iter_Hx1(Iter) = T_fuel_Hx1(i) + dT_Hx1(i+1);
+    %     Cp_fuel_iter_Hx1(Iter) = fn_Cp_find(T_fuel_iter_Hx1(i+1), p_fuel_Hx1(i), cp, p);
+    %     h_iter_Hx1(Iter) = h_Hx1(i) + (Cp_fuel_Hx1(i) + Cp_fuel_iter_Hx1(i+1))/ 2 * dT_Hx1(i+1);
+    %     tol_Hx1(Iter) = abs((h_Hx1(i+1) - h_iter_Hx1(i+1)) / h_Hx1(i+1));
+    % 
+    % else
+    %     T_fuel_Hx1(i+1) = T_fuel_iter_Hx1(Iter);
+    % 
+    %     Iter = Iter + 1;
+    % end
+    % 
+    % T_fuel_Hx1(i+1) = T_fuel_iter_Hx1(Iter);
+    % % End of Iteration Code (Existed)
+    
+    dp_fuel_Hx1(i+1) = (f_fuel_Hx1(i)*(dx/D_fuel_h_Hx1)*rho_fuel_Hx1(i)*((u_fuel_Hx1(i)^2)/2))/1000;
+    p_fuel_Hx1(i+1) = p_fuel_Hx1(i) - dp_fuel_Hx1(i+1);
+    sum_dp_fuel_Hx1(i+1) = sum_dp_fuel_Hx1(i) + dp_fuel_Hx1(i+1);
 
 end
 
@@ -376,9 +399,7 @@ for ii = 1 : n_pipe1+1
         T_wh_pipe1(ii) = T_wc_pipe1(ii) + q_total_pipe1(ii)*t_wall_pipe1/k_wall_pipe1(ii)/(A_heat_fuel_dx_pipe1);
     end
 
-    ii = ii + 1 ;
-
-    T_fuel_pipe1(ii) = T_fuel_pipe1(ii-1) - q_total_pipe1(ii - 1) / (Cp_fuel_pipe1(ii - 1) * m_dot_fuel);
+    T_fuel_pipe1(ii+1) = T_fuel_pipe1(ii) - q_total_pipe1(ii) / (Cp_fuel_pipe1(ii) * m_dot_fuel);
 end
 
 
@@ -480,50 +501,48 @@ for j = 1 : n_Hx2 + 1
 
     end
 
-    j = j+1;
+    Q_total_Hx2(j+1) = q_total_Hx2(j) + Q_total_Hx2(j);
 
-    Q_total_Hx2(j) = q_total_Hx2(j-1) + Q_total_Hx2(j-1);
+    fricpf_Hx2(j+1) = n_fuel_Hx2*pi/8*f_fuel_Hx2(j)*rho_fuel_Hx2(j)*u_fuel_Hx2(j)^2*D_fuel_h_Hx2;
+    qpp_Hx2(j+1) = (q_total_Hx2(j)/dx)/(W_ch_Hx2*n_fuel_Hx2); % heat addition per unit length
+    qp_Hx2(j+1) = u_fuel_Hx2(j)*fricpf_Hx2(j+1)+Apwc_Hx1*qpp_Hx2(j+1);
+    drfdp_Hx2(j+1) = ( fn_rho_find(T_fuel_Hx2(j), p_fuel_Hx2(j)+100, rho, p) - fn_rho_find(T_fuel_Hx2(j), p_fuel_Hx2(j), rho, p) )/100000;
+    drfdT_Hx2(j+1) = ( fn_rho_find(T_fuel_Hx2(j)+20, p_fuel_Hx2(j), rho, p) - fn_rho_find(T_fuel_Hx2(j), p_fuel_Hx2(j), rho, p) )/20;
 
-    fricpf_Hx2(j) = n_fuel_Hx2*pi/8*f_fuel_Hx2(j-1)*rho_fuel_Hx2(j-1)*u_fuel_Hx2(j-1)^2*D_fuel_h_Hx2;
-    qpp_Hx2(j) = (q_total_Hx2(j-1)/dx)/(W_ch_Hx2*n_fuel_Hx2); % heat addition per unit length
-    qp_Hx2(j) = u_fuel_Hx2(j-1)*fricpf_Hx2(j)+Apwc_Hx1*qpp_Hx2(j);
-    drfdp_Hx2(j) = ( fn_rho_find(T_fuel_Hx2(j-1), p_fuel_Hx2(j-1)+100, rho, p) - fn_rho_find(T_fuel_Hx2(j-1), p_fuel_Hx2(j-1), rho, p) )/100000;
-    drfdT_Hx2(j) = ( fn_rho_find(T_fuel_Hx2(j-1)+20, p_fuel_Hx2(j-1), rho, p) - fn_rho_find(T_fuel_Hx2(j-1), p_fuel_Hx2(j-1), rho, p) )/20;
+    dTdxf_Hx2(j+1) = -1*beta_Hx2(j)*T_fuel_Hx2(j)*fricpf_Hx2(j+1) / (rho_fuel_Hx2(j)*Cp_fuel_Hx2(j)*(1+u_fuel_Hx2(j)^2*drfdp_Hx2(j+1))*Area_fuel_Hx2) + qp_Hx2(j+1)/m_dot_fuel/Cp_fuel_Hx2(j);
+    dTdxf_Hx2(j+1) = dTdxf_Hx2(j+1)/(1+beta_Hx2(j)*T_fuel_Hx2(j)*drfdT_Hx2(j+1)*u_fuel_Hx2(j)^2/rho_fuel_Hx2(j)/Cp_fuel_Hx2(j)/(1+u_fuel_Hx2(j)^2*drfdp_Hx2(j+1)));
+    dpdxf_Hx2(j+1) = (-1*u_fuel_Hx2(j)^2*drfdT_Hx2(j+1)*dTdxf_Hx2(j+1) - fricpf_Hx2(j+1)/Area_fuel_Hx1)/(1+u_fuel_Hx2(j)^2*drfdp_Hx2(j+1));
 
-    dTdxf_Hx2(j) = -1*beta_Hx2(j-1)*T_fuel_Hx2(j-1)*fricpf_Hx2(j) / (rho_fuel_Hx2(j-1)*Cp_fuel_Hx2(j-1)*(1+u_fuel_Hx2(j-1)^2*drfdp_Hx2(j))*Area_fuel_Hx2) + qp_Hx2(j)/m_dot_fuel/Cp_fuel_Hx2(j-1);
-    dTdxf_Hx2(j) = dTdxf_Hx2(j)/(1+beta_Hx2(j-1)*T_fuel_Hx2(j-1)*drfdT_Hx2(j)*u_fuel_Hx2(j-1)^2/rho_fuel_Hx2(j-1)/Cp_fuel_Hx2(j-1)/(1+u_fuel_Hx2(j-1)^2*drfdp_Hx2(j)));
-    dpdxf_Hx2(j) = (-1*u_fuel_Hx2(j-1)^2*drfdT_Hx2(j)*dTdxf_Hx2(j) - fricpf_Hx2(j)/Area_fuel_Hx1)/(1+u_fuel_Hx2(j-1)^2*drfdp_Hx2(j));
+    % T_fuel_Hx2(j+1) = T_fuel_Hx2(j)+dTdxf_Hx2(j+1)*dx;
 
-    T_fuel_Hx2(j) = T_fuel_Hx2(j-1)+dTdxf_Hx2(j)*dx;
-
-    dh_Hx2(j) = dTdxf_Hx2(j)*Cp_fuel_Hx2(j-1)*dx;
-    h_Hx2(j) = dh_Hx2(j) + h_Hx2(j-1);
-    dT_Hx2(j) = 0.5*dh_Hx2(j) / Cp_fuel_Hx2(j-1) / max(h_Hx2(j)/h_Hx2(j-1), h_Hx2(j-1)/h_Hx2(j));
-    T_fuel_iter_Hx2(j) = T_fuel_Hx2(j-1) + dT_Hx2(j);
-    Cp_fuel_iter_Hx2(j) = fn_Cp_find(T_fuel_iter_Hx2(j), p_fuel_Hx2(j-1), cp, p);
-    h_iter_Hx2(j) = h_Hx2(j-1) + (Cp_fuel_Hx2(j-1) + Cp_fuel_iter_Hx2(j))/ 2 * dT_Hx2(j);
-    tol_Hx2(j) = abs((h_Hx2(j) - h_iter_Hx2(j)) / h_Hx2(j));
+    dh_Hx2(j+1) = (beta_Hx2(j)*T_fuel_Hx2(j)/rho_fuel_Hx2(j)*dpdxf_Hx2(j+1)+dTdxf_Hx2(j+1)*Cp_fuel_Hx2(j))*dx;
+    h_Hx2(j+1) = dh_Hx2(j+1) + h_Hx2(j);
+    dT_Hx2(j+1) = 0.5*dh_Hx2(j+1) / Cp_fuel_Hx2(j) / max(h_Hx2(j+1)/h_Hx2(j), h_Hx2(j)/h_Hx2(j+1));
+    T_fuel_iter_Hx2(j+1) = T_fuel_Hx2(j) + dT_Hx2(j+1);
+    Cp_fuel_iter_Hx2(j+1) = fn_Cp_find(T_fuel_iter_Hx2(j+1), p_fuel_Hx2(j), cp, p);
+    h_iter_Hx2(j+1) = h_Hx2(j) + (Cp_fuel_Hx2(j) + Cp_fuel_iter_Hx2(j+1))/ 2 * dT_Hx2(j+1);
+    tol_Hx2(j+1) = abs((h_Hx2(j+1) - h_iter_Hx2(j+1)) / h_Hx2(j+1));
     Iter = 1;
-    tol_Hx2(Iter) = tol_Hx2(j);
-    dh_Hx2_1 = dh_Hx2(j);
+    tol_Hx2(Iter) = tol_Hx2(j+1);
+    dh_Hx2_1 = dh_Hx2(j+1);
 
     if tol_Hx2(Iter) > 1e-8
-        dT_iter_Hx2(Iter) = 0.5*dh_Hx2_1 / Cp_fuel_Hx2(j-1) / max(h_Hx2(j)/h_Hx2(j-1), h_Hx2(j-1)/h_Hx2(j));
-        T_fuel_iter_Hx2(Iter) = T_fuel_Hx2(j-1) + dT_Hx2(j);
-        Cp_fuel_iter_Hx2(Iter) = fn_Cp_find(T_fuel_iter_Hx2(j), p_fuel_Hx2(j-1), cp, p);
-        h_iter_Hx2(Iter) = h_Hx2(j-1) + (Cp_fuel_Hx2(j-1) + Cp_fuel_iter_Hx2(j))/ 2 * dT_Hx2(j);
-        tol_Hx2(Iter) = abs((h_Hx2(j) - h_iter_Hx2(j)) / h_Hx2(j));
+        dT_iter_Hx2(Iter) = 0.5*dh_Hx2_1 / Cp_fuel_Hx2(j) / max(h_Hx2(j+1)/h_Hx2(j), h_Hx2(j)/h_Hx2(j+1));
+        T_fuel_iter_Hx2(Iter) = T_fuel_Hx2(j) + dT_Hx2(j+1);
+        Cp_fuel_iter_Hx2(Iter) = fn_Cp_find(T_fuel_iter_Hx2(j+1), p_fuel_Hx2(j), cp, p);
+        h_iter_Hx2(Iter) = h_Hx2(j) + (Cp_fuel_Hx2(j) + Cp_fuel_iter_Hx2(j+1))/ 2 * dT_Hx2(j+1);
+        tol_Hx2(Iter) = abs((h_Hx2(j+1) - h_iter_Hx2(j+1)) / h_Hx2(j+1));
 
     else
-        T_fuel_Hx2(j) = T_fuel_iter_Hx2(Iter);
+        T_fuel_Hx2(j+1) = T_fuel_iter_Hx2(Iter);
 
         Iter = Iter + 1;
     end
 
-    T_fuel_Hx2(j) = T_fuel_iter_Hx2(Iter);
-    dp_fuel_Hx2(j) = (f_fuel_Hx2(j-1)*(dx/D_fuel_h_Hx2)*rho_fuel_Hx2(j-1)*((u_fuel_Hx2(j-1)^2)/2))/1000;
-    p_fuel_Hx2(j) = p_fuel_Hx2(j-1) - dp_fuel_Hx2(j);
-    sum_dp_fuel_Hx2(j) = sum_dp_fuel_Hx2(j-1) + dp_fuel_Hx2(j);
+    T_fuel_Hx2(j+1) = T_fuel_iter_Hx2(Iter);
+    dp_fuel_Hx2(j+1) = (f_fuel_Hx2(j)*(dx/D_fuel_h_Hx2)*rho_fuel_Hx2(j)*((u_fuel_Hx2(j)^2)/2))/1000;
+    p_fuel_Hx2(j+1) = p_fuel_Hx2(j) - dp_fuel_Hx2(j+1);
+    sum_dp_fuel_Hx2(j+1) = sum_dp_fuel_Hx2(j) + dp_fuel_Hx2(j+1);
 
 end
 
@@ -617,9 +636,7 @@ for jj = 1 : n_pipe2+1
 
     end
 
-    jj = jj + 1 ;
-
-    T_fuel_pipe2(jj) = T_fuel_pipe2(jj-1) - q_total_pipe2(jj - 1) / (Cp_fuel_pipe2(jj - 1) * m_dot_fuel);
+    T_fuel_pipe2(jj+1) = T_fuel_pipe2(jj) - q_total_pipe2(jj) / (Cp_fuel_pipe2(jj) * m_dot_fuel);
 end
 toc;
 
@@ -872,5 +889,4 @@ fprintf('pipe1 온도변화 = %4.2f [oC] \n', T_fuel_pipe1(1)-T_fuel_pipe1(ii));
 fprintf('pipe2 온도변화 = %4.2f [oC] \n', T_fuel_pipe2(1)-T_fuel_pipe2(jj));
 fprintf('인젝터 입구온도 = %4.2f oC \n\n', T_fuel_pipe2(jj-1)-T0);
 fprintf('total heat flux= %4.2f [kW/m^2] \n', (Q_total_Hx1(i-1)+Q_total_Hx2(j-1))/1000/(A_heat_fuel_Hx1+A_heat_fuel_Hx2));
-
 
